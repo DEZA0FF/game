@@ -1,108 +1,102 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<title>Telegram PvP Clicker (Bot)</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<style>
-body {
-  background: #0f0f0f;
-  color: white;
-  font-family: Arial;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-}
-.game { text-align: center; }
-button {
-  padding: 15px 30px;
-  font-size: 20px;
-  border-radius: 10px;
-  border: none;
-  margin: 10px;
-}
-</style>
-</head>
-
-<body>
-<div class="game">
-  <h2 id="mode">PvP режим (с ботом)</h2>
-  <p>Ты: <span id="score">0</span> | 🤖 Бот: <span id="botScore">0</span></p>
-  <p>Время: <span id="time">20</span></p>
-
-  <button id="click">ЖМИ</button>
-  <button id="start">🎮 Начать матч</button>
-</div>
-
-<script>
-const tg = Telegram.WebApp;
-tg.expand();
-
-let score = 0;
-let botScore = 0;
-let time = 20;
-let timer = null;
-let playing = false;
-
-const scoreEl = document.getElementById("score");
-const botScoreEl = document.getElementById("botScore");
-const timeEl = document.getElementById("time");
-
-document.getElementById("start").onclick = () => {
-  startGame();
-};
-
-document.getElementById("click").onclick = () => {
-  if (!playing) return;
-  score++;
-  scoreEl.innerText = score;
-  tg.HapticFeedback?.impactOccurred("light");
-};
-
-function startGame() {
-  score = 0;
-  botScore = 0;
-  time = 20;
-  playing = true;
-
-  scoreEl.innerText = score;
-  botScoreEl.innerText = botScore;
-  timeEl.innerText = time;
-  document.getElementById("mode").innerText = "⚔️ Матч с ботом";
-
-  timer = setInterval(() => {
-    time--;
-    timeEl.innerText = time;
-
-    // бот кликает случайно
-    if (Math.random() < 0.7) {
-      botScore += Math.floor(Math.random() * 2);
-      botScoreEl.innerText = botScore;
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mini Kombat</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0f1220;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
     }
+    #game {
+      width: 360px;
+      height: 640px;
+      background: linear-gradient(180deg, #1a1f3c, #0f1220);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .enemy, .player {
+      width: 80px;
+      height: 80px;
+      border-radius: 12px;
+      position: absolute;
+      bottom: 80px;
+    }
+    .player {
+      left: 40px;
+      background: #4ade80;
+    }
+    .enemy {
+      right: 40px;
+      background: #f87171;
+    }
+    #ui {
+      position: absolute;
+      top: 10px;
+      left: 0;
+      right: 0;
+      text-align: center;
+    }
+    button {
+      margin-top: 10px;
+      padding: 12px 24px;
+      font-size: 18px;
+      border: none;
+      border-radius: 12px;
+      background: #6366f1;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div id="game">
+    <div id="ui">
+      <div>❤️ Игрок: <span id="playerHp">100</span></div>
+      <div>💀 Враг: <span id="enemyHp">100</span></div>
+      <button onclick="attack()">Атаковать</button>
+    </div>
+    <div class="player"></div>
+    <div class="enemy"></div>
+  </div>
 
-    if (time <= 0) endGame();
-  }, 1000);
-}
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.ready();
 
-function endGame() {
-  clearInterval(timer);
-  playing = false;
+    let playerHp = 100;
+    let enemyHp = 100;
 
-  let result = "🤝 Ничья";
-  if (score > botScore) result = "🏆 Ты победил!";
-  if (score < botScore) result = "❌ Ты проиграл";
+    function attack() {
+      const playerDamage = Math.floor(Math.random() * 15) + 5;
+      const enemyDamage = Math.floor(Math.random() * 12) + 3;
 
-  document.getElementById("mode").innerText = result;
+      enemyHp -= playerDamage;
+      playerHp -= enemyDamage;
 
-  tg.sendData(JSON.stringify({
-    action: "bot_match_result",
-    score: score,
-    bot: botScore
-  }));
-}
-</script>
+      if (enemyHp < 0) enemyHp = 0;
+      if (playerHp < 0) playerHp = 0;
+
+      document.getElementById('playerHp').innerText = playerHp;
+      document.getElementById('enemyHp').innerText = enemyHp;
+
+      if (enemyHp === 0) {
+        alert('Победа!');
+        tg.sendData(JSON.stringify({ result: 'win' }));
+      }
+
+      if (playerHp === 0) {
+        alert('Поражение');
+        tg.sendData(JSON.stringify({ result: 'lose' }));
+      }
+    }
+  </script>
 </body>
 </html>
