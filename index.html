@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Telegram PvP Clicker</title>
+<title>Telegram PvP Clicker (Bot)</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -29,12 +29,12 @@ button {
 
 <body>
 <div class="game">
-  <h2 id="mode">PvP режим</h2>
-  <p>Очки: <span id="score">0</span></p>
+  <h2 id="mode">PvP режим (с ботом)</h2>
+  <p>Ты: <span id="score">0</span> | 🤖 Бот: <span id="botScore">0</span></p>
   <p>Время: <span id="time">20</span></p>
 
   <button id="click">ЖМИ</button>
-  <button id="pvp">🎮 Играть PvP</button>
+  <button id="start">🎮 Начать матч</button>
 </div>
 
 <script>
@@ -42,19 +42,17 @@ const tg = Telegram.WebApp;
 tg.expand();
 
 let score = 0;
+let botScore = 0;
 let time = 20;
 let timer = null;
-let matchId = null;
 let playing = false;
 
 const scoreEl = document.getElementById("score");
+const botScoreEl = document.getElementById("botScore");
 const timeEl = document.getElementById("time");
 
-document.getElementById("pvp").onclick = () => {
-  tg.sendData(JSON.stringify({
-    action: "find_match"
-  }));
-  document.getElementById("mode").innerText = "⏳ Поиск соперника...";
+document.getElementById("start").onclick = () => {
+  startGame();
 };
 
 document.getElementById("click").onclick = () => {
@@ -64,26 +62,27 @@ document.getElementById("click").onclick = () => {
   tg.HapticFeedback?.impactOccurred("light");
 };
 
-tg.onEvent("message", (data) => {
-  const msg = JSON.parse(data);
-  if (msg.action === "start_match") {
-    startGame(msg.match_id);
-  }
-});
-
-function startGame(id) {
-  matchId = id;
+function startGame() {
   score = 0;
+  botScore = 0;
   time = 20;
   playing = true;
 
-  document.getElementById("mode").innerText = "⚔️ PvP матч!";
   scoreEl.innerText = score;
+  botScoreEl.innerText = botScore;
   timeEl.innerText = time;
+  document.getElementById("mode").innerText = "⚔️ Матч с ботом";
 
   timer = setInterval(() => {
     time--;
     timeEl.innerText = time;
+
+    // бот кликает случайно
+    if (Math.random() < 0.7) {
+      botScore += Math.floor(Math.random() * 2);
+      botScoreEl.innerText = botScore;
+    }
+
     if (time <= 0) endGame();
   }, 1000);
 }
@@ -92,13 +91,17 @@ function endGame() {
   clearInterval(timer);
   playing = false;
 
-  tg.sendData(JSON.stringify({
-    action: "match_result",
-    match_id: matchId,
-    score: score
-  }));
+  let result = "🤝 Ничья";
+  if (score > botScore) result = "🏆 Ты победил!";
+  if (score < botScore) result = "❌ Ты проиграл";
 
-  document.getElementById("mode").innerText = "📤 Результат отправлен";
+  document.getElementById("mode").innerText = result;
+
+  tg.sendData(JSON.stringify({
+    action: "bot_match_result",
+    score: score,
+    bot: botScore
+  }));
 }
 </script>
 </body>
