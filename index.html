@@ -1,29 +1,105 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>PvP Game</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Telegram PvP Clicker</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  background: #0f0f0f;
+  color: white;
+  font-family: Arial;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+.game { text-align: center; }
+button {
+  padding: 15px 30px;
+  font-size: 20px;
+  border-radius: 10px;
+  border: none;
+  margin: 10px;
+}
+</style>
 </head>
+
 <body>
+<div class="game">
+  <h2 id="mode">PvP режим</h2>
+  <p>Очки: <span id="score">0</span></p>
+  <p>Время: <span id="time">20</span></p>
 
-<h2 id="score">🔴 0 : 0 🔵</h2>
-<canvas id="game" width="360" height="500"></canvas>
-
-<div class="controls">
-  <button onclick="move(1, -1)">◀</button>
-  <button onclick="attack(1)">⚔</button>
-  <button onclick="move(1, 1)">▶</button>
+  <button id="click">ЖМИ</button>
+  <button id="pvp">🎮 Играть PvP</button>
 </div>
 
-<div class="controls">
-  <button onclick="move(2, -1)">◀</button>
-  <button onclick="attack(2)">⚔</button>
-  <button onclick="move(2, 1)">▶</button>
-</div>
+<script>
+const tg = Telegram.WebApp;
+tg.expand();
 
-<script src="game.js"></script>
+let score = 0;
+let time = 20;
+let timer = null;
+let matchId = null;
+let playing = false;
+
+const scoreEl = document.getElementById("score");
+const timeEl = document.getElementById("time");
+
+document.getElementById("pvp").onclick = () => {
+  tg.sendData(JSON.stringify({
+    action: "find_match"
+  }));
+  document.getElementById("mode").innerText = "⏳ Поиск соперника...";
+};
+
+document.getElementById("click").onclick = () => {
+  if (!playing) return;
+  score++;
+  scoreEl.innerText = score;
+  tg.HapticFeedback?.impactOccurred("light");
+};
+
+tg.onEvent("message", (data) => {
+  const msg = JSON.parse(data);
+  if (msg.action === "start_match") {
+    startGame(msg.match_id);
+  }
+});
+
+function startGame(id) {
+  matchId = id;
+  score = 0;
+  time = 20;
+  playing = true;
+
+  document.getElementById("mode").innerText = "⚔️ PvP матч!";
+  scoreEl.innerText = score;
+  timeEl.innerText = time;
+
+  timer = setInterval(() => {
+    time--;
+    timeEl.innerText = time;
+    if (time <= 0) endGame();
+  }, 1000);
+}
+
+function endGame() {
+  clearInterval(timer);
+  playing = false;
+
+  tg.sendData(JSON.stringify({
+    action: "match_result",
+    match_id: matchId,
+    score: score
+  }));
+
+  document.getElementById("mode").innerText = "📤 Результат отправлен";
+}
+</script>
 </body>
 </html>
